@@ -31,7 +31,7 @@ const PROVIDERS = {
     id: "gemini",
     name: "Google Gemini",
     badge: "Rekomendasi Utama",
-    models: ["gemini-2.0-flash", "gemini-2.5-flash", "gemini-2.5-pro"],
+    models: ["gemini-2.0-flash", "gemini-2.5-flash", "gemini-2.5-pro", "gemini-1.5-flash", "gemini-1.5-pro"],
     defaultModel: "gemini-2.0-flash",
     baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai",
     authHeader: "Authorization",
@@ -49,7 +49,7 @@ const PROVIDERS = {
     id: "openrouter",
     name: "OpenRouter",
     badge: "Cadangan Gratis",
-    models: ["deepseek/deepseek-r1:free", "google/gemini-2.0-pro-exp-02-05:free"],
+    models: ["deepseek/deepseek-r1:free", "meta-llama/llama-3.3-70b-instruct:free", "google/gemini-2.0-flash-exp:free", "google/gemini-2.0-pro-exp-02-05:free"],
     defaultModel: "deepseek/deepseek-r1:free",
     baseUrl: "https://openrouter.ai/api/v1",
     authHeader: "Authorization",
@@ -138,10 +138,12 @@ function SettingsPage() {
 
       setTestStatus((prev) => ({ ...prev, [providerId]: "valid" }));
       toast.success("Koneksi berhasil", { description: `API Key ${providerConfig.name} valid.` });
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
       setTestStatus((prev) => ({ ...prev, [providerId]: "invalid" }));
-      toast.error("Koneksi gagal", { description: "API Key tidak valid atau model tidak tersedia." });
+      toast.error("Koneksi gagal", { 
+        description: error?.message || "API Key tidak valid atau model tidak tersedia." 
+      });
     }
   };
 
@@ -204,22 +206,33 @@ function SettingsPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor={`${p.id}-model`}>Model</Label>
-                    <Select
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor={`${p.id}-model`}>Model AI (Bisa Ketik Model Apa Saja)</Label>
+                      <span className="text-[11px] text-muted-foreground">Ketik bebas atau klik rekomendasi di bawah</span>
+                    </div>
+                    <Input
+                      id={`${p.id}-model`}
                       value={models[p.id as keyof typeof models]}
-                      onValueChange={(val) => setModels((prev) => ({ ...prev, [p.id]: val }))}
-                    >
-                      <SelectTrigger id={`${p.id}-model`}>
-                        <SelectValue placeholder="Pilih model" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {p.models.map((m) => (
-                          <SelectItem key={m} value={m}>
-                            {m}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      onChange={(e) => setModels((prev) => ({ ...prev, [p.id]: e.target.value }))}
+                      placeholder={`Contoh: ${p.defaultModel}`}
+                    />
+                    <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                      <span className="text-xs text-muted-foreground mr-1">Rekomendasi:</span>
+                      {p.models.map((m) => (
+                        <button
+                          key={m}
+                          type="button"
+                          onClick={() => setModels((prev) => ({ ...prev, [p.id]: m }))}
+                          className={`text-xs px-2.5 py-1 rounded-md border transition-all ${
+                            models[p.id as keyof typeof models] === m
+                              ? "bg-primary text-primary-foreground border-primary font-medium shadow-sm"
+                              : "bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground border-border"
+                          }`}
+                        >
+                          {m}
+                        </button>
+                      ))}
+                    </div>
                   </div>
 
                   <div className="flex items-center justify-between pt-2">

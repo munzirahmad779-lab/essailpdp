@@ -81,7 +81,7 @@ function ChatWindow({
   const apiKey = localStorage.getItem(`${selectedProvider}_api_key`) || "";
   const selectedModel = localStorage.getItem(`${selectedProvider}_model`) || (
     selectedProvider === "gemini" ? "gemini-2.0-flash" :
-    selectedProvider === "groq" ? "llama-3.3-70b-versatile" :
+    selectedProvider === "groq" ? "qwen/qwen3.8-27b" :
     "deepseek/deepseek-r1:free"
   );
 
