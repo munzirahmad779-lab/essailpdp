@@ -10,6 +10,8 @@ import { Input } from "@/components/ui/input";
 export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
       { title: "Masuk — Simulasi Wawancara LPDP" },
       { name: "description", content: "Masuk untuk menyimpan riwayat latihan wawancara LPDP Anda." },
       { property: "og:title", content: "Masuk — Simulasi Wawancara LPDP" },

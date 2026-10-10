@@ -6,6 +6,8 @@ import hero from "@/assets/hero.jpg";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
       { title: "Simulasi Wawancara LPDP dengan AI" },
       { name: "description", content: "Upload CV & esai, lalu latihan wawancara LPDP dengan pewawancara AI yang bisa diajak bicara." },
       { property: "og:title", content: "Simulasi Wawancara LPDP dengan AI" },
@@ -38,7 +40,7 @@ function Index() {
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Button asChild variant="gold" size="lg">
-                <Link to="/dashboard">Mulai latihan</Link>
+                <Link to="/conversation">Mulai latihan</Link>
               </Button>
             </div>
           </div>

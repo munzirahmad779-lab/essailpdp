@@ -20,6 +20,8 @@ import { Button } from "@/components/ui/button";
 export const Route = createFileRoute("/_authenticated/conversation")({
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
       { title: "Sesi Wawancara — LPDP AI" },
       { name: "description", content: "Simulasi wawancara LPDP dengan pewawancara AI." },
       { property: "og:title", content: "Sesi Wawancara — LPDP AI" },

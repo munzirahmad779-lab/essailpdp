@@ -15,6 +15,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedConversationRouteImport } from './routes/_authenticated/conversation'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedNewRouteImport } from './routes/_authenticated/new'
+import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as ApiInterviewRouteImport } from './routes/api/interview'
 import { Route as ApiSpeakRouteImport } from './routes/api/speak'
 import { Route as ApiTranscribeRouteImport } from './routes/api/transcribe'
@@ -49,6 +50,11 @@ const AuthenticatedNewRoute = AuthenticatedNewRouteImport.update({
   path: '/new',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const ApiInterviewRoute = ApiInterviewRouteImport.update({
   id: '/api/interview',
   path: '/api/interview',
@@ -71,6 +77,7 @@ export interface FileRoutesByFullPath {
   '/conversation': typeof AuthenticatedConversationRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/new': typeof AuthenticatedNewRoute
+  '/profile': typeof AuthenticatedProfileRoute
   '/api/interview': typeof ApiInterviewRoute
   '/api/speak': typeof ApiSpeakRoute
   '/api/transcribe': typeof ApiTranscribeRoute
@@ -81,6 +88,7 @@ export interface FileRoutesByTo {
   '/conversation': typeof AuthenticatedConversationRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/new': typeof AuthenticatedNewRoute
+  '/profile': typeof AuthenticatedProfileRoute
   '/api/interview': typeof ApiInterviewRoute
   '/api/speak': typeof ApiSpeakRoute
   '/api/transcribe': typeof ApiTranscribeRoute
@@ -93,6 +101,7 @@ export interface FileRoutesById {
   '/_authenticated/conversation': typeof AuthenticatedConversationRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/new': typeof AuthenticatedNewRoute
+  '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/api/interview': typeof ApiInterviewRoute
   '/api/speak': typeof ApiSpeakRoute
   '/api/transcribe': typeof ApiTranscribeRoute
@@ -105,6 +114,7 @@ export interface FileRouteTypes {
     | '/conversation'
     | '/dashboard'
     | '/new'
+    | '/profile'
     | '/api/interview'
     | '/api/speak'
     | '/api/transcribe'
@@ -115,6 +125,7 @@ export interface FileRouteTypes {
     | '/conversation'
     | '/dashboard'
     | '/new'
+    | '/profile'
     | '/api/interview'
     | '/api/speak'
     | '/api/transcribe'
@@ -126,6 +137,7 @@ export interface FileRouteTypes {
     | '/_authenticated/conversation'
     | '/_authenticated/dashboard'
     | '/_authenticated/new'
+    | '/_authenticated/profile'
     | '/api/interview'
     | '/api/speak'
     | '/api/transcribe'
@@ -184,6 +196,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedNewRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/profile': {
+      id: '/_authenticated/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof AuthenticatedProfileRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/api/interview': {
       id: '/api/interview'
       path: '/api/interview'
@@ -212,12 +231,14 @@ interface AuthenticatedRouteChildren {
   AuthenticatedConversationRoute: typeof AuthenticatedConversationRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedNewRoute: typeof AuthenticatedNewRoute
+  AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedConversationRoute: AuthenticatedConversationRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedNewRoute: AuthenticatedNewRoute,
+  AuthenticatedProfileRoute: AuthenticatedProfileRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
