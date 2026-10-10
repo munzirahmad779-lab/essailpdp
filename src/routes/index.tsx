@@ -52,7 +52,7 @@ function Index() {
               <GraduationCap className="size-4" /> Latihan Wawancara Substansi
             </div>
             <h1 className="font-display text-4xl leading-tight md:text-6xl">
-              Siap duduk di depan <span className="text-gold">panel LPDP</span>?
+              Simulasi Wawancara <span className="text-gold">LPDP</span>
             </h1>
             <p className="mt-5 max-w-md text-primary-foreground/80">
               Upload CV dan esai Anda. Pewawancara AI akan bertanya, mengejar jawaban, dan memberi
