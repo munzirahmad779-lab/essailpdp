@@ -1,10 +1,11 @@
-import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
-
 export async function extractPdfText(file: File): Promise<string> {
   if (file.type !== "application/pdf" && !/\.pdf$/i.test(file.name)) {
     throw new Error("File harus PDF");
   }
-  const pdfjs = await import("pdfjs-dist");
+  const [pdfjs, { default: pdfWorkerUrl }] = await Promise.all([
+    import("pdfjs-dist"),
+    import("pdfjs-dist/build/pdf.worker.min.mjs?url"),
+  ]);
   pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 
   const task = pdfjs.getDocument({ data: new Uint8Array(await file.arrayBuffer()) });
