@@ -1,5 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { authUser, GATEWAY_URL, gatewayErrorMessage, json, requireApiKey, STT_MODEL } from "@/lib/ai.server";
+import {
+  authUser,
+  GATEWAY_URL,
+  gatewayErrorMessage,
+  json,
+  requireApiKey,
+  STT_MODEL,
+} from "@/lib/ai.server";
 
 export const Route = createFileRoute("/api/transcribe")({
   server: {

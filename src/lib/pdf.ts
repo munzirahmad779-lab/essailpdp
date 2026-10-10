@@ -1,4 +1,5 @@
 export async function extractPdfText(file: File): Promise<string> {
+  if (file.type !== "application/pdf") throw new Error("File harus PDF");
   const pdfjs = await import("pdfjs-dist");
   const worker = (await import("pdfjs-dist/build/pdf.worker.min.mjs?url")).default;
   pdfjs.GlobalWorkerOptions.workerSrc = worker;
@@ -9,5 +10,6 @@ export async function extractPdfText(file: File): Promise<string> {
     const content = await page.getTextContent();
     pages.push(content.items.map((it) => ("str" in it ? it.str : "")).join(" "));
   }
+  await doc.destroy();
   return pages.join("\n\n").replace(/\s+\n/g, "\n").trim();
 }

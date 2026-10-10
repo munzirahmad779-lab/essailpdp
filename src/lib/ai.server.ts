@@ -53,12 +53,21 @@ export function createGateway(apiKey: string) {
     headers: { "Lovable-API-Key": apiKey, "X-Lovable-AIG-SDK": "vercel-ai-sdk" },
     fetch: runIdFetch.fetch,
   });
-  return Object.assign(provider, { getRunId: runIdFetch.getRunId, waitForRunId: runIdFetch.waitForRunId });
+  return Object.assign(provider, {
+    getRunId: runIdFetch.getRunId,
+    waitForRunId: runIdFetch.waitForRunId,
+  });
 }
 
 export function gatewayErrorMessage(status: number, body: string) {
   try {
     const data = JSON.parse(body);
-    return data.message || data.error?.message || (typeof data.error === "string" ? data.error : `Layanan AI gagal (${status})`);
-  } catch { return `Layanan AI gagal (${status}): ${body.slice(0, 300)}`; }
+    return (
+      data.message ||
+      data.error?.message ||
+      (typeof data.error === "string" ? data.error : `Layanan AI gagal (${status})`)
+    );
+  } catch {
+    return `Layanan AI gagal (${status}): ${body.slice(0, 300)}`;
+  }
 }
