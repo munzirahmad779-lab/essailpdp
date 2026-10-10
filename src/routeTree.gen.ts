@@ -12,12 +12,12 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuthenticatedConversationRouteImport } from './routes/_authenticated/conversation'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedNewRouteImport } from './routes/_authenticated/new'
 import { Route as ApiInterviewRouteImport } from './routes/api/interview'
 import { Route as ApiSpeakRouteImport } from './routes/api/speak'
 import { Route as ApiTranscribeRouteImport } from './routes/api/transcribe'
-import { Route as AuthenticatedSessionIdRouteImport } from './routes/_authenticated/session.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -33,6 +33,12 @@ const AuthRoute = AuthRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedConversationRoute =
+  AuthenticatedConversationRouteImport.update({
+    id: '/conversation',
+    path: '/conversation',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -58,76 +64,71 @@ const ApiTranscribeRoute = ApiTranscribeRouteImport.update({
   path: '/api/transcribe',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedSessionIdRoute = AuthenticatedSessionIdRouteImport.update({
-  id: '/session/$id',
-  path: '/session/$id',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/conversation': typeof AuthenticatedConversationRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/new': typeof AuthenticatedNewRoute
   '/api/interview': typeof ApiInterviewRoute
   '/api/speak': typeof ApiSpeakRoute
   '/api/transcribe': typeof ApiTranscribeRoute
-  '/session/$id': typeof AuthenticatedSessionIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/conversation': typeof AuthenticatedConversationRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/new': typeof AuthenticatedNewRoute
   '/api/interview': typeof ApiInterviewRoute
   '/api/speak': typeof ApiSpeakRoute
   '/api/transcribe': typeof ApiTranscribeRoute
-  '/session/$id': typeof AuthenticatedSessionIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/auth': typeof AuthRoute
+  '/_authenticated/conversation': typeof AuthenticatedConversationRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/new': typeof AuthenticatedNewRoute
   '/api/interview': typeof ApiInterviewRoute
   '/api/speak': typeof ApiSpeakRoute
   '/api/transcribe': typeof ApiTranscribeRoute
-  '/_authenticated/session/$id': typeof AuthenticatedSessionIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/auth'
+    | '/conversation'
     | '/dashboard'
     | '/new'
     | '/api/interview'
     | '/api/speak'
     | '/api/transcribe'
-    | '/session/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/auth'
+    | '/conversation'
     | '/dashboard'
     | '/new'
     | '/api/interview'
     | '/api/speak'
     | '/api/transcribe'
-    | '/session/$id'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/_authenticated/conversation'
     | '/_authenticated/dashboard'
     | '/_authenticated/new'
     | '/api/interview'
     | '/api/speak'
     | '/api/transcribe'
-    | '/_authenticated/session/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -161,6 +162,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/conversation': {
+      id: '/_authenticated/conversation'
+      path: '/conversation'
+      fullPath: '/conversation'
+      preLoaderRoute: typeof AuthenticatedConversationRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/dashboard': {
       id: '/_authenticated/dashboard'
@@ -197,26 +205,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiTranscribeRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/session/$id': {
-      id: '/_authenticated/session/$id'
-      path: '/session/$id'
-      fullPath: '/session/$id'
-      preLoaderRoute: typeof AuthenticatedSessionIdRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
   }
 }
 
 interface AuthenticatedRouteChildren {
+  AuthenticatedConversationRoute: typeof AuthenticatedConversationRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedNewRoute: typeof AuthenticatedNewRoute
-  AuthenticatedSessionIdRoute: typeof AuthenticatedSessionIdRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedConversationRoute: AuthenticatedConversationRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedNewRoute: AuthenticatedNewRoute,
-  AuthenticatedSessionIdRoute: AuthenticatedSessionIdRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(

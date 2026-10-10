@@ -12,7 +12,7 @@ import { recordWav } from "@/lib/record-wav";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 
-export const Route = createFileRoute("/_authenticated/session/$id")({
+export const Route = createFileRoute("/_authenticated/conversation")({
   head: () => ({
     meta: [
       { title: "Sesi Wawancara — LPDP AI" },
