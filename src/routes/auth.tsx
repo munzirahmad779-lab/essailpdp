@@ -10,8 +10,13 @@ import { Input } from "@/components/ui/input";
 export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
       { title: "Masuk — Simulasi Wawancara LPDP" },
-      { name: "description", content: "Masuk untuk menyimpan riwayat latihan wawancara LPDP Anda." },
+      {
+        name: "description",
+        content: "Masuk untuk menyimpan riwayat latihan wawancara LPDP Anda.",
+      },
       { property: "og:title", content: "Masuk — Simulasi Wawancara LPDP" },
       { property: "og:description", content: "Masuk untuk menyimpan riwayat latihan wawancara." },
     ],
@@ -23,12 +28,13 @@ function AuthPage() {
   const nav = useNavigate();
   const { session } = useAuth();
   const [mode, setMode] = useState<"in" | "up">("in");
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    if (session) nav({ to: "/dashboard" });
+    if (session) nav({ to: "/conversation" });
   }, [session, nav]);
 
   async function submit(e: React.FormEvent) {
@@ -41,7 +47,10 @@ function AuthPage() {
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
-        options: { emailRedirectTo: window.location.origin + "/dashboard" },
+        options: {
+          emailRedirectTo: window.location.origin + "/auth",
+          data: { display_name: name.trim() },
+        },
       });
       if (error) toast.error(error.message);
       else if (!data.session) toast.success("Cek email Anda untuk konfirmasi akun.");
@@ -50,7 +59,9 @@ function AuthPage() {
   }
 
   async function google() {
-    const r = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin + "/auth" });
+    const r = await lovable.auth.signInWithOAuth("google", {
+      redirect_uri: window.location.origin + "/auth",
+    });
     if (r.error) toast.error(String(r.error.message ?? r.error));
   }
 
@@ -64,15 +75,41 @@ function AuthPage() {
         </Button>
         <div className="my-4 text-center text-xs text-muted-foreground">atau</div>
         <form onSubmit={submit} className="space-y-3">
-          <Input type="email" required placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
-          <Input type="password" required minLength={6} placeholder="Kata sandi" value={password} onChange={(e) => setPassword(e.target.value)} />
+          {mode === "up" && (
+            <Input
+              required
+              aria-label="Nama profil"
+              placeholder="Nama Anda"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+          )}
+          <Input
+            type="email"
+            required
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+          <Input
+            type="password"
+            required
+            minLength={6}
+            placeholder="Kata sandi"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
           <Button type="submit" variant="gold" className="w-full" disabled={busy}>
             {mode === "in" ? "Masuk" : "Buat akun"}
           </Button>
         </form>
-        <button className="mt-4 w-full text-sm text-primary underline-offset-4 hover:underline" onClick={() => setMode(mode === "in" ? "up" : "in")}>
+        <Button
+          variant="link"
+          className="mt-4 w-full text-sm text-primary underline-offset-4 hover:underline"
+          onClick={() => setMode(mode === "in" ? "up" : "in")}
+        >
           {mode === "in" ? "Belum punya akun? Daftar" : "Sudah punya akun? Masuk"}
-        </button>
+        </Button>
       </div>
     </main>
   );

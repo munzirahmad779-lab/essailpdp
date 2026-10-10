@@ -6,19 +6,40 @@ import hero from "@/assets/hero.jpg";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
       { title: "Simulasi Wawancara LPDP dengan AI" },
-      { name: "description", content: "Upload CV & esai, lalu latihan wawancara LPDP dengan pewawancara AI yang bisa diajak bicara." },
+      {
+        name: "description",
+        content:
+          "Upload CV & esai, lalu latihan wawancara LPDP dengan pewawancara AI yang bisa diajak bicara.",
+      },
       { property: "og:title", content: "Simulasi Wawancara LPDP dengan AI" },
-      { property: "og:description", content: "Latihan wawancara LPDP berbasis CV & esai Anda, lengkap dengan suara." },
+      {
+        property: "og:description",
+        content: "Latihan wawancara LPDP berbasis CV & esai Anda, lengkap dengan suara.",
+      },
     ],
   }),
   component: Index,
 });
 
 const features = [
-  { icon: FileText, title: "Dari dokumen Anda", text: "Pertanyaan digali langsung dari CV dan esai PDF Anda." },
-  { icon: Mic, title: "Jawab dengan suara", text: "Tekan mikrofon dan bicara, jawaban otomatis jadi teks." },
-  { icon: Volume2, title: "AI bicara balik", text: "Pewawancara membacakan pertanyaan seperti panel sungguhan." },
+  {
+    icon: FileText,
+    title: "Dari dokumen Anda",
+    text: "Pertanyaan digali langsung dari CV dan esai PDF Anda.",
+  },
+  {
+    icon: Mic,
+    title: "Jawab dengan suara",
+    text: "Tekan mikrofon dan bicara, jawaban otomatis jadi teks.",
+  },
+  {
+    icon: Volume2,
+    title: "AI bicara balik",
+    text: "Pewawancara membacakan pertanyaan seperti panel sungguhan.",
+  },
 ];
 
 function Index() {
@@ -34,11 +55,12 @@ function Index() {
               Siap duduk di depan <span className="text-gold">panel LPDP</span>?
             </h1>
             <p className="mt-5 max-w-md text-primary-foreground/80">
-              Upload CV dan esai Anda. Pewawancara AI akan bertanya, mengejar jawaban, dan memberi penilaian jujur.
+              Upload CV dan esai Anda. Pewawancara AI akan bertanya, mengejar jawaban, dan memberi
+              penilaian jujur.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Button asChild variant="gold" size="lg">
-                <Link to="/dashboard">Mulai latihan</Link>
+                <Link to="/conversation">Mulai latihan</Link>
               </Button>
             </div>
           </div>

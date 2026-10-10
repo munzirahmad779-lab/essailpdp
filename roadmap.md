@@ -1,0 +1,4 @@
+- [ ] Single persistent conversation with chronological, named interviewer segments.
+- [ ] Profile name, signup and profile editing.
+- [ ] Verify PDF, AI text, recording, spoken reply and history restore.
+- [ ] Fix current errors and complete route metadata.

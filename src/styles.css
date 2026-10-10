@@ -168,3 +168,6 @@
 @utility animate-pulse-ring {
   animation: pulse-ring 1.2s ease-out infinite;
 }
+
+.conversation-shell { height: calc(100dvh - 3.5rem); flex: none; }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; scroll-behavior: auto !important; } }

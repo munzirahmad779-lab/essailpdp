@@ -14,12 +14,34 @@ export type Database = {
   }
   public: {
     Tables: {
+      interview_conversations: {
+        Row: {
+          id: string
+          messages: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          messages?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          id?: string
+          messages?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       interview_sessions: {
         Row: {
           created_at: string
           cv_text: string
           essay_text: string
           id: string
+          interviewer_name: string
           messages: Json
           title: string
           updated_at: string
@@ -30,6 +52,7 @@ export type Database = {
           cv_text?: string
           essay_text?: string
           id?: string
+          interviewer_name?: string
           messages?: Json
           title?: string
           updated_at?: string
@@ -40,10 +63,29 @@ export type Database = {
           cv_text?: string
           essay_text?: string
           id?: string
+          interviewer_name?: string
           messages?: Json
           title?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          display_name: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          display_name?: string
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          display_name?: string
+          id?: string
+          updated_at?: string
         }
         Relationships: []
       }
