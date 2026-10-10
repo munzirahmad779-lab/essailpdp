@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { convertToModelMessages, streamText, type UIMessage } from "ai";
 import { messageText, type InterviewMessage } from "@/lib/interview-history";
+import { normalizeGroqModel } from "@/lib/ai-models";
 import { withLovableAiGatewayRunIdHeader } from "@/lib/run-id.server";
 import {
   authUser,
@@ -120,7 +121,7 @@ export const Route = createFileRoute("/api/interview")({
             baseURL,
             headers: { Authorization: `Bearer ${apiKey}` },
           });
-          model = provider(aiModel || "gemini-2.0-flash");
+          model = provider(aiProviderId === "groq" ? normalizeGroqModel(aiModel) : aiModel || "gemini-2.0-flash");
         } else {
           gateway = createGateway(requireApiKey());
           model = gateway(CHAT_MODEL);
