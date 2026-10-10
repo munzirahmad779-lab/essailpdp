@@ -37,7 +37,16 @@ export function createLovableAiGatewayRunIdFetch(initialRunId?: string) {
       }
     },
     getRunId: () => runId,
-    waitForRunId: () => (runId ? Promise.resolve(runId) : runIdReady),
+    waitForRunId: () => {
+      if (runId) return Promise.resolve(runId);
+      return new Promise<string | undefined>((resolve) => {
+        const timer = setTimeout(() => resolve(undefined), 5000);
+        void runIdReady.then((value) => {
+          clearTimeout(timer);
+          resolve(value);
+        });
+      });
+    },
   };
 }
 

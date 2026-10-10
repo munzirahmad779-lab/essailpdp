@@ -52,6 +52,11 @@ export const Route = createFileRoute("/api/speak")({
           console.error("TTS failed", res.status, t);
           return json({ error: gatewayErrorMessage(res.status, t) }, res.status || 500);
         }
+        const contentType = res.headers.get("content-type") ?? "";
+        if (!contentType.startsWith("audio/")) {
+          await res.body.cancel();
+          return json({ error: "Layanan suara tidak mengembalikan audio. Silakan coba lagi." }, 502);
+        }
         return new Response(res.body, {
           headers: { "Content-Type": res.headers.get("content-type") ?? "audio/wav" },
         });
