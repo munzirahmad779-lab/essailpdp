@@ -76,6 +76,23 @@ function ChatWindow({
   const [speaking, setSpeaking] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const spokenRef = useRef<string | null>(initial.at(-1)?.id ?? null);
+  
+  const selectedProvider = localStorage.getItem("selected_provider") || "gemini";
+  const apiKey = localStorage.getItem(`${selectedProvider}_api_key`) || "";
+  const selectedModel = localStorage.getItem(`${selectedProvider}_model`) || (
+    selectedProvider === "gemini" ? "gemini-2.0-flash" :
+    selectedProvider === "groq" ? "llama-3.3-70b-versatile" :
+    "deepseek/deepseek-r1:free"
+  );
+
+  useEffect(() => {
+    if (!apiKey) {
+      toast.error("API Key Belum Diatur", {
+        description: "Silakan isi API Key di menu Settings sebelum memulai wawancara.",
+        duration: 10000,
+      });
+    }
+  }, [apiKey]);
 
   const { messages, sendMessage, status, stop, error } = useChat<InterviewMessage>({
     id,
@@ -83,7 +100,13 @@ function ChatWindow({
     transport: new DefaultChatTransport({
       api: "/api/interview",
       headers: authHeader,
-      body: { conversationId: id, segmentId: active?.id },
+      body: { 
+        conversationId: id, 
+        segmentId: active?.id,
+        aiProvider: selectedProvider,
+        apiKey: apiKey,
+        aiModel: selectedModel
+      },
     }),
     onError: (e) => toast.error(e.message || "Terjadi kesalahan"),
   });

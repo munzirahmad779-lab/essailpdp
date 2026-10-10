@@ -89,15 +89,46 @@ export const Route = createFileRoute("/api/interview")({
         const messages = saved.some((m) => m.id === userMessage.id)
           ? saved
           : [...saved, userMessage];
+        const aiProviderId = body?.aiProvider;
+        const apiKey = body?.apiKey;
+        const aiModel = body?.aiModel;
+
         const { error: saveError } = await ctx.supabase
           .from("interview_conversations")
           .update({ messages: messages as never, updated_at: new Date().toISOString() })
           .eq("id", conversationId);
         if (saveError) return json({ error: "Jawaban belum tersimpan. " + saveError.message }, 500);
-        const gateway = createGateway(requireApiKey());
+        
+        let provider;
+        let model;
+        let gateway: any = null;
+
+        if (aiProviderId && apiKey) {
+          const { createOpenAICompatible } = await import("@ai-sdk/openai-compatible");
+          let baseURL = "";
+          
+          if (aiProviderId === "gemini") {
+            baseURL = "https://generativelanguage.googleapis.com/v1beta/openai";
+          } else if (aiProviderId === "groq") {
+            baseURL = "https://api.groq.com/openai/v1";
+          } else if (aiProviderId === "openrouter") {
+            baseURL = "https://openrouter.ai/api/v1";
+          }
+
+          provider = createOpenAICompatible({
+            name: aiProviderId,
+            baseURL,
+            headers: { Authorization: `Bearer ${apiKey}` },
+          });
+          model = provider(aiModel || "gemini-2.0-flash");
+        } else {
+          gateway = createGateway(requireApiKey());
+          model = gateway(CHAT_MODEL);
+        }
+
         let upstreamError: unknown;
         const result = streamText({
-          model: gateway(CHAT_MODEL),
+          model,
           system: systemPrompt(
             segment.cv_text,
             segment.essay_text,
@@ -155,7 +186,7 @@ export const Route = createFileRoute("/api/interview")({
               if (error) throw new Error("Riwayat belum tersimpan: " + error.message);
             },
           }),
-          gateway,
+          gateway || { getRunId: () => undefined, waitForRunId: async () => undefined },
         );
       },
     },

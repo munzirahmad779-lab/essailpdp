@@ -16,6 +16,7 @@ import { Route as AuthenticatedConversationRouteImport } from './routes/_authent
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedNewRouteImport } from './routes/_authenticated/new'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
+import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as ApiInterviewRouteImport } from './routes/api/interview'
 import { Route as ApiSpeakRouteImport } from './routes/api/speak'
 import { Route as ApiTranscribeRouteImport } from './routes/api/transcribe'
@@ -55,6 +56,11 @@ const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
   path: '/profile',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const ApiInterviewRoute = ApiInterviewRouteImport.update({
   id: '/api/interview',
   path: '/api/interview',
@@ -78,6 +84,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/new': typeof AuthenticatedNewRoute
   '/profile': typeof AuthenticatedProfileRoute
+  '/settings': typeof AuthenticatedSettingsRoute
   '/api/interview': typeof ApiInterviewRoute
   '/api/speak': typeof ApiSpeakRoute
   '/api/transcribe': typeof ApiTranscribeRoute
@@ -89,6 +96,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/new': typeof AuthenticatedNewRoute
   '/profile': typeof AuthenticatedProfileRoute
+  '/settings': typeof AuthenticatedSettingsRoute
   '/api/interview': typeof ApiInterviewRoute
   '/api/speak': typeof ApiSpeakRoute
   '/api/transcribe': typeof ApiTranscribeRoute
@@ -102,6 +110,7 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/new': typeof AuthenticatedNewRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
+  '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/api/interview': typeof ApiInterviewRoute
   '/api/speak': typeof ApiSpeakRoute
   '/api/transcribe': typeof ApiTranscribeRoute
@@ -115,6 +124,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/new'
     | '/profile'
+    | '/settings'
     | '/api/interview'
     | '/api/speak'
     | '/api/transcribe'
@@ -126,6 +136,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/new'
     | '/profile'
+    | '/settings'
     | '/api/interview'
     | '/api/speak'
     | '/api/transcribe'
@@ -138,6 +149,7 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/_authenticated/new'
     | '/_authenticated/profile'
+    | '/_authenticated/settings'
     | '/api/interview'
     | '/api/speak'
     | '/api/transcribe'
@@ -203,6 +215,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProfileRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/settings': {
+      id: '/_authenticated/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AuthenticatedSettingsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/api/interview': {
       id: '/api/interview'
       path: '/api/interview'
@@ -232,6 +251,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedNewRoute: typeof AuthenticatedNewRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
+  AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
@@ -239,6 +259,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedNewRoute: AuthenticatedNewRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
+  AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
