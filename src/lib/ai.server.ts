@@ -17,15 +17,15 @@ export function json(data: unknown, status = 200) {
 }
 
 export function requireApiKey() {
-  const key = process.env.LOVABLE_API_KEY;
+  const key = process.env["LOVABLE_API_KEY"];
   if (!key) throw new Error("LOVABLE_API_KEY belum dikonfigurasi");
   return key;
 }
 
 /** Verifies the bearer token and returns a user-scoped client (RLS applies). */
 export async function authUser(request: Request) {
-  const url = process.env.SUPABASE_URL;
-  const anon = process.env.SUPABASE_PUBLISHABLE_KEY;
+  const url = process.env["SUPABASE_URL"];
+  const anon = process.env["SUPABASE_PUBLISHABLE_KEY"];
   const auth = request.headers.get("authorization");
   if (!url || !anon || !auth?.startsWith("Bearer ")) return null;
   const token = auth.slice(7);
@@ -47,17 +47,18 @@ export async function authUser(request: Request) {
 
 export function createGateway(apiKey: string) {
   const runIdFetch = createLovableAiGatewayRunIdFetch(undefined);
-  return createOpenAICompatible({
+  const provider = createOpenAICompatible({
     name: "lovable",
     baseURL: `${GATEWAY_URL}/v1`,
     headers: { "Lovable-API-Key": apiKey, "X-Lovable-AIG-SDK": "vercel-ai-sdk" },
     fetch: runIdFetch.fetch,
   });
+  return Object.assign(provider, { getRunId: runIdFetch.getRunId, waitForRunId: runIdFetch.waitForRunId });
 }
 
 export function gatewayErrorMessage(status: number, body: string) {
-  if (status === 402) return "Kredit AI habis. Silakan isi ulang kredit workspace.";
-  if (status === 429) return "Terlalu banyak permintaan. Tunggu sebentar lalu coba lagi.";
-  if (status === 403) return "Akses AI ditolak untuk workspace ini.";
-  return `Layanan AI gagal (${status}). ${body.slice(0, 200)}`;
+  try {
+    const data = JSON.parse(body);
+    return data.message || data.error?.message || (typeof data.error === "string" ? data.error : `Layanan AI gagal (${status})`);
+  } catch { return `Layanan AI gagal (${status}): ${body.slice(0, 300)}`; }
 }
