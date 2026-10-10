@@ -2,8 +2,11 @@ export async function extractPdfText(file: File): Promise<string> {
   if (file.type !== "application/pdf") throw new Error("File harus PDF");
   const pdfjs = await import("pdfjs-dist");
   
-  // Use unpkg CDN for the worker to avoid bundler issues in production
-  pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+  // Standard bundler-compatible way to load worker
+  pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+    "pdfjs-dist/build/pdf.worker.min.mjs",
+    import.meta.url
+  ).toString();
   
   const task = pdfjs.getDocument({ data: new Uint8Array(await file.arrayBuffer()) });
   try {
