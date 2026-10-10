@@ -1,16 +1,21 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport, type UIMessage } from "ai";
-import { useEffect, useRef, useState } from "react";
-import ReactMarkdown from "react-markdown";
+import { DefaultChatTransport } from "ai";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { conversationOptions } from '@/lib/conversation-data';
+import { messageText, type InterviewMessage, type Segment } from '@/lib/interview-history';
+import { Conversation, ConversationContent, ConversationScrollButton } from '@/components/ai-elements/conversation';
+import { Message, MessageContent, MessageResponse } from '@/components/ai-elements/message';
+import { PromptInput, PromptInputTextarea, PromptInputFooter, PromptInputSubmit } from '@/components/ai-elements/prompt-input';
+import { Shimmer } from '@/components/ai-elements/shimmer';
 import { toast } from "sonner";
-import { ArrowLeft, Loader2, Mic, Send, Square, Volume2, VolumeX, ClipboardCheck } from "lucide-react";
+import { Loader2, Mic, Square, Volume2, VolumeX, ClipboardCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { authHeader } from "@/hooks/use-auth";
 import { recordWav } from "@/lib/record-wav";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+
 
 export const Route = createFileRoute("/_authenticated/conversation")({
   head: () => ({
@@ -21,30 +26,21 @@ export const Route = createFileRoute("/_authenticated/conversation")({
       { property: "og:description", content: "Simulasi wawancara LPDP dengan pewawancara AI." },
     ],
   }),
+  loader: ({ context }) => context.queryClient.ensureQueryData(conversationOptions),
   component: SessionPage,
 });
 
 function SessionPage() {
-  const { id } = Route.useParams();
-  const { data, isLoading, error } = useQuery({
-    queryKey: ["session", id],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("interview_sessions").select("id,title,messages").eq("id", id).single();
-      if (error) throw error;
-      return data;
-    },
-    staleTime: Infinity,
-  });
-  if (isLoading) return <div className="p-8 text-center text-muted-foreground">Memuat sesi…</div>;
-  if (error || !data) return <div className="p-8 text-center text-destructive">Sesi tidak ditemukan.</div>;
-  return <ChatWindow key={id} id={id} title={data.title} initial={data.messages as unknown as UIMessage[]} />;
+  const { data } = useSuspenseQuery(conversationOptions);
+  return <ChatWindow key={data.id + data.segments.length} id={data.id} name={data.name} segments={data.segments} initial={data.messages} />;
 }
 
-function textOf(m: UIMessage) {
-  return m.parts.map((p) => (p.type === "text" ? p.text : "")).join("");
-}
-
-function ChatWindow({ id, title, initial }: { id: string; title: string; initial: UIMessage[] }) {
+function ChatWindow({ id, name, segments, initial }: { id: string; name: string; segments: Segment[]; initial: InterviewMessage[] }) {
+  const active = segments.at(-1);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const recordingRef = useRef<null | { stop: () => Promise<File> }>(null);
+  const audioUrlRef = useRef<string | null>(null);
+  const speechAbort = useRef<AbortController | null>(null);
   const [input, setInput] = useState("");
   const [voiceOn, setVoiceOn] = useState(true);
   const [recording, setRecording] = useState<null | { stop: () => Promise<File> }>(null);
@@ -52,75 +48,75 @@ function ChatWindow({ id, title, initial }: { id: string; title: string; initial
   const [speaking, setSpeaking] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const spokenRef = useRef<string | null>(initial.at(-1)?.id ?? null);
-  const bottomRef = useRef<HTMLDivElement>(null);
-  const started = useRef(false);
 
-  const { messages, sendMessage, status, stop, error } = useChat({
+  const { messages, sendMessage, status, stop, error } = useChat<InterviewMessage>({
     id,
     messages: initial,
     transport: new DefaultChatTransport({
       api: "/api/interview",
       headers: authHeader,
-      body: { sessionId: id },
+      body: { conversationId: id, segmentId: active?.id },
     }),
     onError: (e) => toast.error(e.message || "Terjadi kesalahan"),
   });
   const busy = status === "submitted" || status === "streaming";
 
-  useEffect(() => {
-    if (!started.current && initial.length === 0) {
-      started.current = true;
-      sendMessage({ text: "Selamat pagi, saya siap memulai wawancara." });
-    }
-  }, [initial.length, sendMessage]);
+  const stopAudio = useCallback(() => {
+    speechAbort.current?.abort();
+    audioRef.current?.pause();
+    if (audioUrlRef.current) URL.revokeObjectURL(audioUrlRef.current);
+    audioUrlRef.current = null;
+    setSpeaking(false);
+  }, []);
 
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
-  // Speak the newest assistant message once it finishes streaming
-  useEffect(() => {
-    if (status !== "ready" || !voiceOn) return;
-    const last = messages.at(-1);
-    if (!last || last.role !== "assistant" || spokenRef.current === last.id) return;
-    spokenRef.current = last.id;
-    void speak(textOf(last));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [status, messages, voiceOn]);
-
-  async function speak(text: string) {
+  const speak = useCallback(async (text: string) => {
     if (!text.trim()) return;
+    stopAudio();
+    const controller = new AbortController();
+    speechAbort.current = controller;
     setSpeaking(true);
     try {
-      const res = await fetch("/api/speak", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...(await authHeader()) },
+      const res = await fetch('/api/speak', {
+        method: 'POST', signal: controller.signal,
+        headers: { 'Content-Type': 'application/json', ...(await authHeader()) },
         body: JSON.stringify({ text }),
       });
-      if (!res.ok) {
-        const j = await res.json().catch(() => ({}));
-        throw new Error(j.error || "Suara gagal diputar");
-      }
-      const url = URL.createObjectURL(await res.blob());
-      audioRef.current?.pause();
+      if (!res.ok) throw new Error((await res.json()).error || 'Suara gagal diputar');
+      const blob = await res.blob();
+      if (controller.signal.aborted) return;
+      if (!blob.size || !blob.type.startsWith('audio/')) throw new Error('Suara tidak tersedia.');
+      const url = URL.createObjectURL(blob);
+      audioUrlRef.current = url;
       const audio = new Audio(url);
       audioRef.current = audio;
-      audio.onended = () => setSpeaking(false);
+      audio.onended = stopAudio;
+      audio.onerror = stopAudio;
       await audio.play();
-    } catch (e) {
-      setSpeaking(false);
-      toast.error((e as Error).message);
+    } catch (error) {
+      if (!controller.signal.aborted) { setSpeaking(false); toast.error(error instanceof Error ? error.message : 'Suara gagal'); }
     }
-  }
+  }, [stopAudio]);
 
-  function stopAudio() {
+  useEffect(() => {
+    if (status !== 'ready') return;
+    textareaRef.current?.focus();
+    const last = messages.at(-1);
+    if (!voiceOn || !last || last.role !== 'assistant' || spokenRef.current === last.id) return;
+    spokenRef.current = last.id;
+    void speak(messageText(last));
+  }, [status, messages, voiceOn, speak]);
+
+  useEffect(() => () => {
+    speechAbort.current?.abort();
     audioRef.current?.pause();
-    setSpeaking(false);
-  }
+    if (audioUrlRef.current) URL.revokeObjectURL(audioUrlRef.current);
+    void recordingRef.current?.stop().catch(() => {});
+  }, []);
 
   async function toggleMic() {
     if (recording) {
       setRecording(null);
+      recordingRef.current = null;
       setTranscribing(true);
       try {
         const file = await recording.stop();
@@ -130,7 +126,7 @@ function ChatWindow({ id, title, initial }: { id: string; title: string; initial
         const j = await res.json();
         if (!res.ok) throw new Error(j.error || "Gagal mengenali suara");
         const text = (j.text as string).trim();
-        if (text) sendMessage({ text });
+        if (text && active) { setInput(text); textareaRef.current?.focus(); }
         else toast.error("Suara tidak terdengar, coba lagi.");
       } catch (e) {
         toast.error((e as Error).message);
@@ -140,117 +136,68 @@ function ChatWindow({ id, title, initial }: { id: string; title: string; initial
     }
     try {
       stopAudio();
-      setRecording(await recordWav());
+      const rec = await recordWav();
+      recordingRef.current = rec;
+      setRecording(rec);
     } catch {
       toast.error("Izinkan akses mikrofon untuk menjawab dengan suara.");
     }
   }
 
   function submit() {
-    const t = input.trim();
-    if (!t || busy) return;
-    sendMessage({ text: t });
-    setInput("");
+    const text = input.trim();
+    if (!text || busy || !active) return;
+    stopAudio();
+    void sendMessage({ text, metadata: { segmentId: active.id } });
+    setInput('');
+    textareaRef.current?.focus();
   }
 
-  const visible = messages.filter((m, i) => !(i === 0 && m.role === "user" && initial.length === 0) || messages.length > 0);
+  function jump(segmentId: string) {
+    document.getElementById(`segment-${segmentId}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col">
-      <div className="flex items-center gap-2 border-b px-4 py-3">
-        <Button asChild variant="ghost" size="icon">
-          <Link to="/dashboard" aria-label="Kembali">
-            <ArrowLeft />
-          </Link>
-        </Button>
-        <h1 className="flex-1 truncate font-display text-lg text-primary">{title}</h1>
-        <Button variant="ghost" size="icon" onClick={() => (voiceOn ? (stopAudio(), setVoiceOn(false)) : setVoiceOn(true))} aria-label="Suara AI">
-          {voiceOn ? <Volume2 /> : <VolumeX />}
-        </Button>
-      </div>
-
-      <div className="flex-1 space-y-4 overflow-y-auto px-4 py-6">
-        {visible.map((m) => (
-          <div key={m.id} className={m.role === "user" ? "flex justify-end" : "flex gap-3"}>
-            {m.role === "assistant" && (
-              <div className="mt-1 flex size-8 shrink-0 items-center justify-center rounded-full bg-primary font-display text-sm text-gold">
-                P
-              </div>
-            )}
-            <div
-              className={
-                m.role === "user"
-                  ? "max-w-[85%] rounded-2xl rounded-br-md bg-primary px-4 py-2.5 text-primary-foreground"
-                  : "prose prose-sm max-w-[85%] text-foreground [&_h1]:font-display [&_h2]:font-display [&_strong]:text-primary"
-              }
-            >
-              {m.role === "user" ? <p className="whitespace-pre-wrap">{textOf(m)}</p> : <ReactMarkdown>{textOf(m)}</ReactMarkdown>}
-              {m.role === "assistant" && status === "ready" && (
-                <button onClick={() => speak(textOf(m))} className="mt-1 text-xs text-muted-foreground hover:text-primary">
-                  ▶ Putar suara
-                </button>
-              )}
-            </div>
-          </div>
-        ))}
-        {status === "submitted" && (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="size-4 animate-spin" /> Pewawancara sedang berpikir…
-          </div>
-        )}
-        {error && <p className="text-sm text-destructive">{error.message}</p>}
-        <div ref={bottomRef} />
-      </div>
-
-      <div className="sticky bottom-0 border-t bg-background/95 px-4 pb-4 pt-3 backdrop-blur">
-        {speaking && (
-          <button onClick={stopAudio} className="mb-2 flex items-center gap-2 text-xs text-muted-foreground">
-            <Square className="size-3" /> Pewawancara berbicara… ketuk untuk berhenti
-          </button>
-        )}
-        <div className="flex items-end gap-2">
-          <Button
-            variant={recording ? "destructive" : "gold"}
-            size="icon"
-            className={`size-12 shrink-0 rounded-full ${recording ? "animate-pulse-ring" : ""}`}
-            onClick={toggleMic}
-            disabled={transcribing || busy}
-            aria-label={recording ? "Berhenti merekam" : "Jawab dengan suara"}
-          >
-            {transcribing ? <Loader2 className="animate-spin" /> : recording ? <Square /> : <Mic />}
-          </Button>
-          <Textarea
-            autoFocus
-            rows={1}
-            value={input}
-            placeholder={recording ? "Merekam… ketuk lagi untuk selesai" : "Ketik jawaban atau tekan mikrofon"}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                submit();
-              }
-            }}
-            className="max-h-40 min-h-12 resize-none"
-          />
-          {busy ? (
-            <Button size="icon" variant="outline" className="size-12 shrink-0" onClick={stop} aria-label="Stop">
-              <Square />
-            </Button>
-          ) : (
-            <Button size="icon" className="size-12 shrink-0" onClick={submit} disabled={!input.trim()} aria-label="Kirim">
-              <Send />
-            </Button>
-          )}
+    <div className="conversation-shell mx-auto flex w-full max-w-4xl flex-1 flex-col">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-4">
+        <div><h1 className="font-display text-xl text-primary">Percakapan wawancara</h1><p className="text-sm text-muted-foreground">{name || 'Kandidat LPDP'} · {segments.length} latihan</p></div>
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="icon" title="Suara AI" aria-label="Suara AI" aria-pressed={voiceOn} onClick={() => { stopAudio(); setVoiceOn(!voiceOn); }}>{voiceOn ? <Volume2 /> : <VolumeX />}</Button>
+          <Button asChild variant="outline" size="sm"><Link to="/profile">Profil</Link></Button>
+          <Button asChild variant="gold" size="sm"><Link to="/new">Latihan berikutnya</Link></Button>
         </div>
-        <button
-          disabled={busy || messages.length < 3}
-          onClick={() => sendMessage({ text: "Tolong akhiri wawancara dan berikan evaluasi lengkap atas jawaban saya." })}
-          className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary disabled:opacity-40"
-        >
-          <ClipboardCheck className="size-3.5" /> Akhiri & minta penilaian
-        </button>
       </div>
+      {segments.length > 0 && <nav aria-label="Riwayat pewawancara" className="flex gap-2 overflow-x-auto border-b px-4 py-2">{segments.map((segment, index) => <Button key={segment.id} variant="ghost" size="sm" onClick={() => jump(segment.id)}>{index + 1}. {segment.interviewer_name}</Button>)}</nav>}
+      <Conversation className="min-h-0 flex-1">
+        <ConversationContent className="gap-8">
+          {segments.length === 0 && <div className="py-12 text-center"><h2 className="font-display text-2xl text-primary">Latihan pertama Anda</h2><Button asChild variant="gold" className="mt-5"><Link to="/new">Upload CV & esai</Link></Button></div>}
+          {segments.map((segment, index) => {
+            const segmentMessages = messages.filter(m => m.metadata?.segmentId === segment.id);
+            return <section key={segment.id} id={`segment-${segment.id}`} className="scroll-mt-4 space-y-5">
+              <div className="border-b pb-3"><p className="text-xs font-semibold uppercase text-muted-foreground">Latihan {index + 1} · {new Date(segment.created_at).toLocaleDateString('id-ID')}</p><h2 className="mt-1 font-display text-xl text-primary">{segment.interviewer_name}</h2><p className="text-sm text-muted-foreground">{segment.title}</p></div>
+              {segmentMessages.map(m => <Message key={m.id} from={m.role}><p className="text-xs font-semibold text-muted-foreground">{m.role === 'assistant' ? segment.interviewer_name : name || 'Anda'}</p><MessageContent className={m.role === 'user' ? 'group-[.is-user]:bg-primary group-[.is-user]:text-primary-foreground' : ''}>{m.parts.map((part,i) => part.type === 'text' ? m.role === 'assistant' ? <MessageResponse key={i}>{part.text}</MessageResponse> : <p key={i} className="whitespace-pre-wrap">{part.text}</p> : null)}</MessageContent>{m.role === 'assistant' && !busy && <Button variant="ghost" size="icon-sm" title="Putar suara" aria-label="Putar suara" onClick={() => void speak(messageText(m))}><Volume2 /></Button>}</Message>)}
+              {!segmentMessages.length && segment.id === active?.id && <Button variant="gold" disabled={busy} onClick={() => void sendMessage({ text: 'Saya siap memulai latihan ini. Silakan ajukan pertanyaan pertama.', metadata: { segmentId: segment.id } })}>Mulai tanya jawab</Button>}
+            </section>;
+          })}
+          {status === 'submitted' && <Shimmer>Pewawancara sedang berpikir…</Shimmer>}
+          {error && <p role="alert" className="text-sm text-destructive">{error.message}</p>}
+        </ConversationContent>
+        <ConversationScrollButton />
+      </Conversation>
+      {active && <div className="border-t bg-background p-4">
+        {speaking && <Button variant="ghost" size="sm" onClick={stopAudio}><Square /> Hentikan suara</Button>}
+        <PromptInput onSubmit={submit}>
+          <PromptInputTextarea ref={textareaRef} autoFocus value={input} onChange={e => setInput(e.target.value)} placeholder={recording ? 'Merekam jawaban…' : 'Jawaban Anda…'} disabled={recording !== null} />
+          <PromptInputFooter>
+            <div className="flex items-center gap-2">
+              <Button type="button" variant={recording ? 'destructive' : 'ghost'} size="icon" title="Mikrofon untuk merekam jawaban" aria-label={recording ? 'Berhenti merekam' : 'Rekam jawaban'} disabled={transcribing || busy} onClick={() => void toggleMic()}>{transcribing ? <Loader2 className="animate-spin" /> : recording ? <Square /> : <Mic />}</Button>
+              <span className="text-xs text-muted-foreground">{recording ? 'Sedang merekam' : transcribing ? 'Menyalin suara…' : active.interviewer_name}</span>
+            </div>
+            <PromptInputSubmit status={status} onStop={stop} disabled={!busy && (!input.trim() || !!recording || transcribing)} aria-label={busy ? 'Hentikan jawaban AI' : 'Kirim jawaban'} />
+          </PromptInputFooter>
+        </PromptInput>
+        <Button variant="ghost" size="sm" className="mt-1" disabled={busy || messages.filter(m=>m.metadata?.segmentId===active.id).length < 3} onClick={() => void sendMessage({ text: 'Akhiri latihan ini dan berikan penilaian atas jawaban saya.', metadata: { segmentId: active.id } })}><ClipboardCheck /> Minta penilaian</Button>
+      </div>}
     </div>
   );
 }
