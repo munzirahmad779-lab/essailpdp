@@ -39,21 +39,17 @@ function PdfSlot({
 }) {
   const [busy, setBusy] = useState(false);
   async function pick(file?: File) {
-    if (!file) return;
-    if (file.type !== "application/pdf") {
-      toast.error("File harus PDF");
-      return;
-    }
+    if (!file || busy) return;
     setBusy(true);
     try {
       const text = await extractPdfText(file);
       if (!text) toast.error("Teks tidak terbaca. Pastikan PDF bukan hasil scan gambar.");
       else onDoc({ name: file.name, text });
     } catch (e) {
-      console.error(e);
-      toast.error("Gagal membaca PDF");
+      toast.error(e instanceof Error ? e.message : "Gagal membaca PDF");
+    } finally {
+      setBusy(false);
     }
-    setBusy(false);
   }
   return (
     <label className="flex cursor-pointer items-center gap-4 rounded-2xl border-2 border-dashed border-border bg-card p-5 transition hover:border-gold">
@@ -74,9 +70,14 @@ function PdfSlot({
       </div>
       <input
         type="file"
+        aria-label={label}
         accept="application/pdf"
         className="hidden"
-        onChange={(e) => pick(e.target.files?.[0])}
+        disabled={busy}
+        onChange={(e) => {
+          void pick(e.target.files?.[0]);
+          e.target.value = "";
+        }}
       />
     </label>
   );

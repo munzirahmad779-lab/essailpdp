@@ -13,3 +13,4 @@
 - Persist one conversation per authenticated user; interview session rows are chronological segments and message metadata holds the segment ID, so interviewer histories do not become separate threads.
 - Store user-facing names in owner-scoped profiles created by an auth lifecycle trigger.
 - Keep AI credentials and requests in server-only modules and authenticated streaming routes; use AI Elements for the conversation surface.
+- Load the PDF.js worker through a Vite URL asset import so its version-matched file is included in published deployments.
