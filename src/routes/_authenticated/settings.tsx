@@ -12,6 +12,16 @@ import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { generateText } from "ai";
 
 export const Route = createFileRoute("/_authenticated/settings")({
+  head: () => ({
+    meta: [
+      { title: "Pengaturan AI — Wawancara LPDP" },
+      { name: "description", content: "Kelola penyedia AI dan model untuk latihan wawancara LPDP." },
+      { property: "og:title", content: "Pengaturan AI — Wawancara LPDP" },
+      { property: "og:description", content: "Kelola penyedia AI dan model untuk latihan wawancara LPDP." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+    ],
+  }),
   component: SettingsPage,
 });
 
@@ -120,7 +130,7 @@ function SettingsPage() {
       await generateText({
         model: provider(models[providerId]),
         prompt: "Hello, just testing the connection. Reply with exactly 'OK'.",
-        maxTokens: 5,
+        maxOutputTokens: 5,
       });
 
       setTestStatus((prev) => ({ ...prev, [providerId]: "valid" }));
