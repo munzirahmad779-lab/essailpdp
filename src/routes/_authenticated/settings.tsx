@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { generateText } from "ai";
+import { GROQ_DEFAULT_MODEL, GROQ_MODELS, normalizeGroqModel } from "@/lib/ai-models";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({
@@ -39,8 +40,8 @@ const PROVIDERS = {
     id: "groq",
     name: "Groq",
     badge: "Tercepat",
-    models: ["llama-3.3-70b-versatile", "mixtral-8x7b-32768"],
-    defaultModel: "llama-3.3-70b-versatile",
+    models: GROQ_MODELS,
+    defaultModel: GROQ_DEFAULT_MODEL,
     baseUrl: "https://api.groq.com/openai/v1",
     authHeader: "Authorization",
   },
@@ -90,9 +91,11 @@ function SettingsPage() {
       openrouter: localStorage.getItem("openrouter_api_key") || "",
     });
 
+    const groqModel = normalizeGroqModel(localStorage.getItem("groq_model"));
+    localStorage.setItem("groq_model", groqModel);
     setModels({
       gemini: localStorage.getItem("gemini_model") || PROVIDERS.gemini.defaultModel,
-      groq: localStorage.getItem("groq_model") || PROVIDERS.groq.defaultModel,
+      groq: groqModel,
       openrouter: localStorage.getItem("openrouter_model") || PROVIDERS.openrouter.defaultModel,
     });
   }, []);

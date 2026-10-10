@@ -14,3 +14,4 @@
 - Store user-facing names in owner-scoped profiles created by an auth lifecycle trigger.
 - Keep AI credentials and requests in server-only modules and authenticated streaming routes; use AI Elements for the conversation surface.
 - Load the PDF.js worker through a Vite URL asset import so its version-matched file is included in published deployments.
+- Share Groq model normalization between settings and interview requests so stale browser preferences cannot select retired models.
